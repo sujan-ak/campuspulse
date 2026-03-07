@@ -59,8 +59,8 @@ const Analytics = () => {
   return (
     <div className="max-w-7xl space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-bold text-foreground">Analytics</h1>
-        <p className="text-muted-foreground text-sm mt-1">Insights into attendance and participation trends</p>
+        <h1 className="text-2xl font-display font-bold" style={{ color: "#fff" }}>Analytics</h1>
+        <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>Insights into attendance and participation trends</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -78,7 +78,7 @@ const Analytics = () => {
           transition={{ delay: 0.2 }}
           className="stat-card"
         >
-          <h3 className="font-display font-semibold text-foreground mb-4">Attendance Trend</h3>
+          <h3 className="font-display font-semibold mb-4" style={{ color: "#fff" }}>Attendance Trend</h3>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={attendanceTrend}>
               <defs>
@@ -109,7 +109,7 @@ const Analytics = () => {
           transition={{ delay: 0.25 }}
           className="stat-card"
         >
-          <h3 className="font-display font-semibold text-foreground mb-4">Participation Trends</h3>
+          <h3 className="font-display font-semibold mb-4" style={{ color: "#fff" }}>Participation Trends</h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={participationData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -132,7 +132,7 @@ const Analytics = () => {
         transition={{ delay: 0.3 }}
         className="stat-card max-w-lg"
       >
-        <h3 className="font-display font-semibold text-foreground mb-4">Event Engagement</h3>
+        <h3 className="font-display font-semibold mb-4" style={{ color: "#fff" }}>Event Engagement</h3>
         <ResponsiveContainer width="100%" height={250}>
           <PieChart>
             <Pie

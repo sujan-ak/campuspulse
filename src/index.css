@@ -96,9 +96,21 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    color: #e2e8f0 !important;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    color: #fff !important;
+  }
+  p, span, div, label, input, select, textarea, button {
+    color: inherit;
+  }
+  /* Ensure text visibility on dark backgrounds */
+  .text-muted-foreground {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+  .text-foreground {
+    color: #fff !important;
   }
 }
 

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Teacher Panel</title>
+</head>
+
+<body>
+
+<h2>Teacher Attendance System</h2>
+
+<button onclick="generateQR()">Generate QR</button>
+
+<br><br>
+
+<img id="qrImage" width="250">
+
+<script>
+
+function generateQR(){
+
+fetch("/generate_qr")
+
+.then(res=>res.json())
+
+.then(data=>{
+
+document.getElementById("qrImage").src =
+data.qr + "?t=" + new Date().getTime()
+
+})
+
+}
+
+</script>
+
+<br><br>
+
+<a href="/student">Open Student App</a>
+
+</body>
+</html>

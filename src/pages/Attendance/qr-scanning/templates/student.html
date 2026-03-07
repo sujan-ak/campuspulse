@@ -1,0 +1,61 @@
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<h3>Student Attendance</h3>
+
+<input id="studentId" placeholder="Enter Student ID">
+
+<br><br>
+
+<div id="reader" style="width:300px"></div>
+
+<p id="msg"></p>
+
+<script>
+
+function onScanSuccess(decodedText){
+
+navigator.geolocation.getCurrentPosition(function(pos){
+
+fetch("/mark_attendance",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+student_id:document.getElementById("studentId").value,
+qr:decodedText,
+lat:pos.coords.latitude,
+lon:pos.coords.longitude
+
+})
+
+})
+
+.then(res=>res.json())
+
+.then(data=>{
+
+document.getElementById("msg").innerText = data.msg
+
+})
+
+})
+
+}
+
+let scanner = new Html5QrcodeScanner(
+"reader",
+{
+fps:10,
+qrbox:250,
+supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+}
+)
+
+scanner.render(onScanSuccess)
+
+</script>

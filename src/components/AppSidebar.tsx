@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   Activity,
   BarChart3,
+  Settings,
   LogOut,
   GraduationCap,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const navItems = [
   { title: "Attendance", url: "/attendance", icon: QrCode },
   { title: "Activities", url: "/activities", icon: Activity },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -36,14 +38,14 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" style={{ background: "rgba(255,255,255,0.03)", borderRight: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)" }}>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg gradient-primary">
-            <GraduationCap className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg, #1a6ef5, #0fb8c9)" }}>
+            <GraduationCap className="h-5 w-5" style={{ color: "#fff" }} />
           </div>
           {!collapsed && (
-            <span className="font-display text-lg font-bold text-sidebar-foreground">
+            <span className="font-display text-lg font-bold" style={{ color: "#fff" }}>
               CampusPulse
             </span>
           )}
@@ -52,26 +54,35 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/50 uppercase text-xs tracking-wider">
+          <SidebarGroupLabel className="uppercase text-xs tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end
+                        className="transition-all"
+                        style={{
+                          color: isActive ? "#fff" : "rgba(255,255,255,0.6)",
+                          background: isActive ? "linear-gradient(135deg, rgba(26,110,245,0.3), rgba(15,184,201,0.2))" : "transparent",
+                          borderLeft: isActive ? "3px solid #1a6ef5" : "3px solid transparent",
+                          boxShadow: isActive ? "0 0 20px rgba(26,110,245,0.4), inset 0 0 20px rgba(26,110,245,0.1)" : "none",
+                          fontWeight: isActive ? 600 : 400
+                        }}
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -83,7 +94,8 @@ export function AppSidebar() {
             <SidebarMenuButton asChild>
               <NavLink
                 to="/"
-                className="text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+                className="transition-colors"
+                style={{ color: "rgba(255,255,255,0.5)" }}
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 {!collapsed && <span>Logout</span>}
