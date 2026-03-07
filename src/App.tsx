@@ -13,6 +13,8 @@ import Attendance from "./pages/Attendance";
 import Activities from "./pages/Activities";
 import Analytics from "./pages/Analytics";
 import QRAttendance from "./pages/QRAttendance";
+import CreateSession from "./pages/CreateSession";
+import AttendanceMonitor from "./pages/AttendanceMonitor";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -32,7 +34,9 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/attendance" element={<ProtectedRoute allowedRole="student"><Attendance /></ProtectedRoute>} />
               <Route path="/qr-attendance" element={<ProtectedRoute allowedRole="teacher"><QRAttendance /></ProtectedRoute>} />
-              <Route path="/activities" element={<Activities />} />
+              <Route path="/create-session" element={<ProtectedRoute allowedRole="teacher"><CreateSession /></ProtectedRoute>} />
+              <Route path="/attendance-monitor" element={<ProtectedRoute allowedRole="teacher"><AttendanceMonitor /></ProtectedRoute>} />
+              <Route path="/activities" element={<ProtectedRoute allowedRole="student"><Activities /></ProtectedRoute>} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

@@ -7,6 +7,8 @@ import {
   Settings,
   LogOut,
   GraduationCap,
+  Plus,
+  Monitor,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -33,8 +35,9 @@ export function AppSidebar() {
 
   const navItems = role === "teacher" ? [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Create Session", url: "/create-session", icon: Plus },
     { title: "QR Attendance", url: "/qr-attendance", icon: QrCode },
-    { title: "Activities", url: "/activities", icon: Activity },
+    { title: "Attendance Monitor", url: "/attendance-monitor", icon: Monitor },
     { title: "Analytics", url: "/analytics", icon: BarChart3 },
     { title: "Settings", url: "/settings", icon: Settings },
   ] : [
