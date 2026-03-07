@@ -24,19 +24,26 @@ export function useStudentData(userId: string | undefined) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       try {
         // Fetch attendance records
-        const { data: attendanceData } = await supabase
+        const { data: attendanceData, error: attendanceError } = await supabase
           .from('attendance')
           .select('*')
           .eq('user_id', userId)
           .order('session_date', { ascending: false });
 
+        if (!attendanceError) {
+          setAttendance(attendanceData || []);
+        }
+
         // Fetch activity records
-        const { data: activitiesData } = await supabase
+        const { data: activitiesData, error: activitiesError } = await supabase
           .from('user_activities')
           .select(`
             *,
@@ -50,10 +57,11 @@ export function useStudentData(userId: string | undefined) {
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
-        setAttendance(attendanceData || []);
-        setActivities(activitiesData || []);
+        if (!activitiesError) {
+          setActivities(activitiesData || []);
+        }
       } catch (error) {
-        console.error('Error fetching student data:', error);
+        // Silently handle errors - tables may not exist yet
       } finally {
         setLoading(false);
       }

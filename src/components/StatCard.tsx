@@ -16,27 +16,31 @@ export function StatCard({ title, value, subtitle, icon: Icon, trend, gradient }
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`stat-card ${gradient ? "gradient-primary text-primary-foreground border-0" : ""}`}
+      className={`stat-card ${gradient ? "border-0" : ""}`}
+      style={gradient ? {
+        background: "linear-gradient(135deg, #1a6ef5, #2d8cf0)",
+        color: "#fff"
+      } : {}}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className={`text-sm font-medium ${gradient ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+          <p className="text-sm font-medium" style={{ color: gradient ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.6)" }}>
             {title}
           </p>
-          <p className="text-3xl font-display font-bold mt-1">{value}</p>
+          <p className="text-3xl font-display font-bold mt-1" style={{ color: "#fff" }}>{value}</p>
           {subtitle && (
-            <p className={`text-sm mt-1 ${gradient ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+            <p className="text-sm mt-1" style={{ color: gradient ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.6)" }}>
               {subtitle}
             </p>
           )}
           {trend && (
-            <p className={`text-sm mt-2 font-medium ${trend.positive ? "text-success" : "text-destructive"}`}>
+            <p className={`text-sm mt-2 font-medium`} style={{ color: trend.positive ? "#22c55e" : "#ef4444" }}>
               {trend.positive ? "↑" : "↓"} {trend.value}
             </p>
           )}
         </div>
-        <div className={`rounded-xl p-3 ${gradient ? "bg-primary-foreground/20" : "bg-secondary"}`}>
-          <Icon className="h-5 w-5" />
+        <div className="rounded-xl p-3" style={{ background: gradient ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.05)" }}>
+          <Icon className="h-5 w-5" style={{ color: "#fff" }} />
         </div>
       </div>
     </motion.div>

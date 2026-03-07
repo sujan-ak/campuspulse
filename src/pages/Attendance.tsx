@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { GlowCard } from "@/components/GlowCard";
 import ODForm from "@/components/ODForm";
-import QrScanner from "react-qr-scanner";
+import { Scanner } from "@yudiel/react-qr-scanner";
 
 const Attendance = () => {
   const [activeTab, setActiveTab] = useState<"scan" | "od">("scan");
@@ -9,16 +9,18 @@ const Attendance = () => {
   const [confirmed, setConfirmed] = useState(false);
   const [scannedData, setScannedData] = useState<any>(null);
 
-  const handleScan = (data: any) => {
-    if (data) {
-      setScannedData(data);
+  const handleScan = (result: any) => {
+    if (result?.[0]?.rawValue) {
+      setScannedData(result[0].rawValue);
       setScanning(false);
       setConfirmed(true);
     }
   };
 
   const handleError = (err: any) => {
-    console.error(err);
+    if (err?.name === 'NotAllowedError') {
+      setScanning(false);
+    }
   };
 
   const openScanner = () => {
@@ -88,13 +90,12 @@ const Attendance = () => {
 
           {scanning && (
             <GlowCard style={{ background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.11)", borderRadius: "16px", padding: "32px", textAlign: "center" }}>
-              <div style={{ position: "relative", width: "100%", maxWidth: "400px", height: "400px", borderRadius: "16px", background: "rgba(255,255,255,.03)", border: "2px solid rgba(15,184,201,.3)", display: "grid", placeItems: "center", margin: "0 auto 24px", overflow: "hidden" }}>
-                <QrScanner
-                  delay={300}
-                  onError={handleError}
+              <div style={{ position: "relative", width: "100%", maxWidth: "400px", height: "400px", borderRadius: "16px", background: "rgba(255,255,255,.03)", border: "2px solid rgba(15,184,201,.3)", overflow: "hidden", margin: "0 auto 24px" }}>
+                <Scanner
                   onScan={handleScan}
-                  style={{ width: "100%", height: "100%" }}
-                  constraints={{ video: { facingMode: "environment" } }}
+                  onError={handleError}
+                  constraints={{ facingMode: "environment" }}
+                  styles={{ container: { width: "100%", height: "100%" } }}
                 />
               </div>
               <p style={{ fontSize: "14px", color: "rgba(255,255,255,.6)", marginBottom: "16px" }}>Position QR code within the frame</p>

@@ -105,19 +105,19 @@ const Login = () => {
 
             {/* Email */}
             <div style={{ marginBottom: "18px" }}>
-              <label style={{ display: "block", fontSize: ".78rem", fontWeight: 600, color: "rgba(255,255,255,.7)", marginBottom: "8px", fontFamily: "'Sora',sans-serif", letterSpacing: ".01em" }}>Email Address</label>
+              <label htmlFor="email" style={{ display: "block", fontSize: ".78rem", fontWeight: 600, color: "rgba(255,255,255,.7)", marginBottom: "8px", fontFamily: "'Sora',sans-serif", letterSpacing: ".01em" }}>Email Address</label>
               <div style={{ position: "relative" }}>
                 <svg style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", fill: "none", stroke: "rgba(255,255,255,.3)", strokeWidth: 2, pointerEvents: "none" }} viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 7l10 7 10-7" /></svg>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={`email@example.com`} required style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "12px", padding: "13px 14px 13px 42px", fontFamily: "'Inter', sans-serif", fontSize: ".875rem", color: "#fff", outline: "none", transition: "all .25s" }} onFocus={(e) => { e.target.style.background = "rgba(255,255,255,.08)"; e.target.style.borderColor = "rgba(26,110,245,.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(26,110,245,.15)"; }} onBlur={(e) => { e.target.style.background = "rgba(255,255,255,.06)"; e.target.style.borderColor = "rgba(255,255,255,.12)"; e.target.style.boxShadow = "none"; }} />
+                <input id="email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={`email@example.com`} required style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "12px", padding: "13px 14px 13px 42px", fontFamily: "'Inter', sans-serif", fontSize: ".875rem", color: "#fff", outline: "none", transition: "all .25s" }} onFocus={(e) => { e.target.style.background = "rgba(255,255,255,.08)"; e.target.style.borderColor = "rgba(26,110,245,.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(26,110,245,.15)"; }} onBlur={(e) => { e.target.style.background = "rgba(255,255,255,.06)"; e.target.style.borderColor = "rgba(255,255,255,.12)"; e.target.style.boxShadow = "none"; }} />
               </div>
             </div>
 
             {/* Password */}
             <div style={{ marginBottom: "18px" }}>
-              <label style={{ display: "block", fontSize: ".78rem", fontWeight: 600, color: "rgba(255,255,255,.7)", marginBottom: "8px", fontFamily: "'Sora',sans-serif", letterSpacing: ".01em" }}>Password</label>
+              <label htmlFor="password" style={{ display: "block", fontSize: ".78rem", fontWeight: 600, color: "rgba(255,255,255,.7)", marginBottom: "8px", fontFamily: "'Sora',sans-serif", letterSpacing: ".01em" }}>Password</label>
               <div style={{ position: "relative" }}>
                 <svg style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", fill: "none", stroke: "rgba(255,255,255,.3)", strokeWidth: 2, pointerEvents: "none" }} viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "12px", padding: "13px 42px 13px 42px", fontFamily: "'Inter', sans-serif", fontSize: ".875rem", color: "#fff", outline: "none", transition: "all .25s" }} onFocus={(e) => { e.target.style.background = "rgba(255,255,255,.08)"; e.target.style.borderColor = "rgba(26,110,245,.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(26,110,245,.15)"; }} onBlur={(e) => { e.target.style.background = "rgba(255,255,255,.06)"; e.target.style.borderColor = "rgba(255,255,255,.12)"; e.target.style.boxShadow = "none"; }} />
+                <input id="password" name="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "12px", padding: "13px 42px 13px 42px", fontFamily: "'Inter', sans-serif", fontSize: ".875rem", color: "#fff", outline: "none", transition: "all .25s" }} onFocus={(e) => { e.target.style.background = "rgba(255,255,255,.08)"; e.target.style.borderColor = "rgba(26,110,245,.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(26,110,245,.15)"; }} onBlur={(e) => { e.target.style.background = "rgba(255,255,255,.06)"; e.target.style.borderColor = "rgba(255,255,255,.12)"; e.target.style.boxShadow = "none"; }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "13px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: "3px", color: "rgba(255,255,255,.3)" }}>
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">{showPassword ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></> : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>}</svg>
                 </button>
@@ -154,11 +154,13 @@ const Login = () => {
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
         input:-webkit-autofill:active {
-          -webkit-background-clip: text;
+          -webkit-box-shadow: 0 0 0 30px rgba(255,255,255,.06) inset !important;
           -webkit-text-fill-color: #fff !important;
-          transition: background-color 5000s ease-in-out 0s;
-          box-shadow: inset 0 0 20px 20px rgba(255,255,255,.06) !important;
-          background-color: rgba(255,255,255,.06) !important;
+          caret-color: #fff !important;
+          transition: background-color 5000s ease-in-out 0s !important;
+        }
+        input {
+          color-scheme: dark;
         }
         input::placeholder {
           color: rgba(255,255,255,.3) !important;

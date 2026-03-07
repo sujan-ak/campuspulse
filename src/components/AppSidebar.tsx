@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import {
   Sidebar,
   SidebarContent,
@@ -24,15 +26,25 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const navItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Attendance", url: "/attendance", icon: QrCode },
-  { title: "Activities", url: "/activities", icon: Activity },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Settings", url: "/settings", icon: Settings },
-];
-
 export function AppSidebar() {
+  const { user } = useAuth();
+  const { profile } = useUserProfile(user?.id);
+  const role = profile?.role || "student";
+
+  const navItems = role === "teacher" ? [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "QR Attendance", url: "/qr-attendance", icon: QrCode },
+    { title: "Activities", url: "/activities", icon: Activity },
+    { title: "Analytics", url: "/analytics", icon: BarChart3 },
+    { title: "Settings", url: "/settings", icon: Settings },
+  ] : [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Attendance", url: "/attendance", icon: QrCode },
+    { title: "Activities", url: "/activities", icon: Activity },
+    { title: "Analytics", url: "/analytics", icon: BarChart3 },
+    { title: "Settings", url: "/settings", icon: Settings },
+  ];
+
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
