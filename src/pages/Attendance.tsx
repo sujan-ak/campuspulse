@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { GlowCard } from "@/components/GlowCard";
 import ODForm from "@/components/ODForm";
 import { Scanner } from "@yudiel/react-qr-scanner";
@@ -13,23 +13,25 @@ const Attendance = () => {
   const [scanning, setScanning] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [scannedData, setScannedData] = useState<any>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const isProcessing = useRef(false);
+  const [isProcessingState, setIsProcessingState] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<{ title: string, room: string } | null>(null);
 
   const handleScan = async (result: any) => {
-    if (result?.[0]?.rawValue && !isProcessing) {
+    if (result?.[0]?.rawValue && !isProcessing.current) {
       const rawValue = result[0].rawValue;
       if (!rawValue.startsWith("CAMPUSPULSE|")) {
         toast.error("Invalid QR Code for CampusPulse");
         return;
       }
 
-      setIsProcessing(true);
+      isProcessing.current = true;
+      setIsProcessingState(true);
       const parts = rawValue.split("|");
       const sessionId = parts[1];
       const subject = parts[2];
       const room = parts[3];
-      const code = parts[4];
+      const qrCode = parts[4];
 
       try {
         // 1. Fetch session details
@@ -40,6 +42,12 @@ const Attendance = () => {
           .single();
 
         if (sessionError || !session) throw new Error("Session not found or expired");
+        if (session.status !== 'active') throw new Error("This session is no longer active");
+
+        // Verify code matches current session code
+        if (session.code !== qrCode) {
+          throw new Error("QR Code has expired. Please scan the latest code.");
+        }
 
         // 2. Geofencing check
         let distance = null;
@@ -51,7 +59,8 @@ const Attendance = () => {
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject, {
                 enableHighAccuracy: true,
-                timeout: 5000
+                timeout: 10000, // Increased to 10s
+                maximumAge: 0
               });
             });
             studentLat = position.coords.latitude;
@@ -66,7 +75,11 @@ const Attendance = () => {
               throw new Error(`Out of range! You are ${Math.round(distance)}m away from the classroom.`);
             }
           } catch (err: any) {
-            throw new Error(err.message || "Could not verify your location. Please enable GPS.");
+            console.error("Geo error:", err);
+            const msg = err.code === 1 ? "Location access denied. Please enable GPS." :
+              err.code === 3 ? "Wait, GPS is taking too long. Try moving near a window." :
+                (err.message || "Could not verify your location.");
+            throw new Error(msg);
           }
         }
 
@@ -97,18 +110,25 @@ const Attendance = () => {
       } catch (err: any) {
         console.error("Attendance error:", err);
         toast.error(err.message || "Failed to mark attendance");
-        setScanning(false);
+        // Don't close scanner on errors like "Out of range" or "Invalid QR" 
+        // to let the student try again.
       } finally {
-        setIsProcessing(false);
+        isProcessing.current = false;
+        setIsProcessingState(false);
       }
     }
   };
 
   const handleError = (err: any) => {
+    console.error("Scanner Error:", err);
     if (err?.name === 'NotAllowedError') {
-      toast.error("Camera access denied");
-      setScanning(false);
+      toast.error("Camera access denied. Please check site permissions.");
+    } else if (err?.name === 'NotFoundError') {
+      toast.error("No camera found on this device.");
+    } else {
+      toast.error("Scanner error: " + (err?.message || "Check camera settings"));
     }
+    setScanning(false);
   };
 
   const openScanner = () => {
@@ -179,7 +199,7 @@ const Attendance = () => {
           {scanning && (
             <GlowCard style={{ background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.11)", borderRadius: "16px", padding: "32px", textAlign: "center" }}>
               <div style={{ position: "relative", width: "100%", maxWidth: "400px", height: "400px", borderRadius: "16px", background: "rgba(255,255,255,.03)", border: "2px solid rgba(15,184,201,.3)", overflow: "hidden", margin: "0 auto 24px" }}>
-                {isProcessing ? (
+                {isProcessingState ? (
                   <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(0,0,0,0.5)", zIndex: 10 }}>
                     <div style={{ textAlign: "center" }}>
                       <div style={{ width: "40px", height: "40px", border: "4px solid rgba(15,184,201,0.3)", borderTopColor: "#0fb8c9", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
@@ -195,7 +215,7 @@ const Attendance = () => {
                 />
               </div>
               <p style={{ fontSize: "14px", color: "rgba(255,255,255,.6)", marginBottom: "16px" }}>Position QR code within the frame</p>
-              <button onClick={reset} disabled={isProcessing} style={{ padding: "9px 18px", borderRadius: "10px", border: "1px solid rgba(255,255,255,.1)", background: "rgba(255,255,255,.05)", color: "rgba(255,255,255,.6)", fontSize: "13px", fontWeight: 500, cursor: isProcessing ? "not-allowed" : "pointer", opacity: isProcessing ? 0.5 : 1 }}>Cancel</button>
+              <button onClick={reset} disabled={isProcessingState} style={{ padding: "9px 18px", borderRadius: "10px", border: "1px solid rgba(255,255,255,.1)", background: "rgba(255,255,255,.05)", color: "rgba(255,255,255,.6)", fontSize: "13px", fontWeight: 500, cursor: isProcessingState ? "not-allowed" : "pointer", opacity: isProcessingState ? 0.5 : 1 }}>Cancel</button>
             </GlowCard>
           )}
 

@@ -24,15 +24,39 @@ CREATE TABLE activities (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Sessions table
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  teacher_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  room TEXT NOT NULL,
+  date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  code TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled')),
+  latitude DECIMAL(9,6),
+  longitude DECIMAL(9,6),
+  geofencing_enabled BOOLEAN DEFAULT false,
+  radius_meters INTEGER DEFAULT 100,
+  section TEXT DEFAULT 'All',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Attendance table
 CREATE TABLE attendance (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  session_name TEXT NOT NULL,
-  date DATE NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('Present', 'Absent', 'Late')),
-  percentage DECIMAL(5,2),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+  session_name TEXT,
+  session_date DATE,
+  latitude DECIMAL(9,6),
+  longitude DECIMAL(9,6),
+  distance_from_teacher DECIMAL(10,2),
+  status TEXT NOT NULL CHECK (status IN ('present', 'absent', 'late')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, session_id)
 );
 
 -- User Activities (junction table)
@@ -47,6 +71,7 @@ CREATE TABLE user_activities (
 -- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_activities ENABLE ROW LEVEL SECURITY;
 
@@ -68,9 +93,23 @@ CREATE POLICY "Teachers can manage activities" ON activities
     )
   );
 
+-- RLS Policies for sessions table
+CREATE POLICY "Anyone can view sessions" ON sessions
+  FOR SELECT USING (true);
+
+CREATE POLICY "Teachers can manage sessions" ON sessions
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('teacher', 'admin')
+    )
+  );
+
 -- RLS Policies for attendance table
 CREATE POLICY "Users can view their own attendance" ON attendance
   FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can mark their own attendance" ON attendance
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Teachers can view all attendance" ON attendance
   FOR SELECT USING (

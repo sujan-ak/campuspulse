@@ -76,9 +76,13 @@ INSERT INTO activities (name, type, date, participants, points, status) VALUES
 - All campus activities, events, workshops
 - Includes type, date, points, status
 
+### sessions
+- Stores active and past class sessions
+- Includes QR code, venue, and geo-location settings
+
 ### attendance
-- Student attendance records
-- Tracks present/absent/late status
+- Student attendance records linked to sessions
+- Tracks present/absent/late status and student location verification
 
 ### user_activities
 - Junction table linking users to activities

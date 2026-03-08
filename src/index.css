@@ -6,6 +6,31 @@
 
 @layer base {
   :root {
+    --background: 220 25% 7%;
+    --foreground: 210 20% 95%;
+    --card: 220 25% 10%;
+    --card-foreground: 210 20% 95%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 16%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 215 15% 55%;
+    --accent: 189 85% 44%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 217 91% 60%;
+    --radius: 0.75rem;
+    --font-display: 'Sora', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  .light {
     --background: 210 20% 98%;
     --foreground: 220 25% 10%;
     --card: 0 0% 100%;
@@ -25,31 +50,6 @@
     --border: 214 20% 90%;
     --input: 214 20% 90%;
     --ring: 217 91% 60%;
-    --radius: 0.75rem;
-    --font-display: 'Sora', sans-serif;
-    --font-body: 'Inter', sans-serif;
-  }
-
-  .dark {
-    --background: 220 25% 7%;
-    --foreground: 210 20% 95%;
-    --card: 220 25% 10%;
-    --card-foreground: 210 20% 95%;
-    --popover: 220 25% 10%;
-    --popover-foreground: 210 20% 95%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 20% 16%;
-    --secondary-foreground: 210 20% 90%;
-    --muted: 220 15% 15%;
-    --muted-foreground: 215 15% 55%;
-    --accent: 189 85% 44%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
-    --ring: 217 91% 60%;
   }
 }
 
@@ -58,18 +58,67 @@
     @apply border-border;
   }
 
+  /* Ensure interactive components (toasts, selects, dropdowns) have readable text */
+  [data-radix-toast-root],
+  [data-sonner-toast],
+  [role="combobox"],
+  [role="listbox"],
+  [role="menu"],
+  [data-radix-select-viewport],
+  [data-radix-popper-content-wrapper] {
+    --foreground: 210 20% 95% !important;
+    --muted-foreground: 215 15% 55% !important;
+    --popover-foreground: 210 20% 95% !important;
+  }
+
+  /* Specific fix for native and custom select options */
+  select option,
+  [data-radix-select-item],
+  [role="option"],
+  [role="menuitem"] {
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  [role="option"]:focus,
+  [role="menuitem"]:focus,
+  [data-radix-select-item]:focus {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+
+  [data-sonner-toast][data-type="error"] {
+    --background: 0 84% 60% !important;
+    --foreground: 0 0% 100% !important;
+    --border: 0 84% 60% !important;
+  }
+
+  [data-sonner-toast] [data-description],
+  [data-sonner-toast] [data-title],
+  [role="option"] *,
+  [role="menuitem"] * {
+    color: inherit !important;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
-    color: #e2e8f0;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     color: #fff;
   }
 
-  p, span, div {
+  /* Target content text specifically and avoid interactive components */
+  p,
+  span:not([role="option"] *):not([role="menuitem"] *):not([data-radix-select-item] *),
+  div:not([role="option"]):not([role="menuitem"]):not([data-radix-select-item]) {
     color: rgba(255, 255, 255, 0.6);
   }
 }

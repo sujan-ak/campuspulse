@@ -78,7 +78,7 @@ const CreateSession = () => {
     try {
       const { data, error } = await supabase
         .from('sessions')
-        .insert([{
+        .insert({
           teacher_id: user.id,
           title: formData.title,
           subject: formData.subject,
@@ -91,9 +91,9 @@ const CreateSession = () => {
           latitude: lat,
           longitude: lon,
           geofencing_enabled: toggles.geoLocation,
-          radius_meters: 100, // Default 100m
+          radius_meters: 100,
           section: formData.section || 'All'
-        }])
+        })
         .select()
         .single();
 
@@ -101,6 +101,7 @@ const CreateSession = () => {
 
       setLaunchedCode(code);
       setShowSuccess(true);
+      toast.success("Session launched successfully!");
     } catch (error: any) {
       console.error("Error creating session:", error);
       toast.error(error.message || "Failed to launch session");
