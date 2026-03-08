@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Student Attendance</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+
+body{
+font-family: Arial;
+text-align:center;
+margin-top:40px;
+}
+
+input{
+padding:10px;
+font-size:16px;
+width:200px;
+}
+
+#reader{
+margin:auto;
+margin-top:20px;
+}
+
+#status{
+margin-top:20px;
+font-size:18px;
+font-weight:bold;
+}
+
+.success{
+color:green;
+}
+
+.error{
+color:red;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Student Attendance</h2>
+
+<input id="studentId" placeholder="Enter Student ID">
+
+<br><br>
+
+<div id="reader" style="width:300px"></div>
+
+<p id="status">Waiting to scan QR...</p>
+
+<script>
+
+// get session from URL
+const urlParams = new URLSearchParams(window.location.search);
+const session = urlParams.get("session");
+
+let scanner;
+
+// check if session exists
+if(!session){
+document.getElementById("status").innerText =
+"❌ Invalid session. Please scan QR again.";
+}
+
+// QR scan success
+function onScanSuccess(decodedText){
+
+scanner.clear()
+
+let studentId = document.getElementById("studentId").value;
+
+if(studentId === ""){
+document.getElementById("status").innerText =
+"❌ Please enter Student ID first";
+return;
+}
+
+document.getElementById("status").innerText =
+"📍 Checking GPS location...";
+
+navigator.geolocation.getCurrentPosition(function(pos){
+
+fetch("/mark_attendance",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+student_id:studentId,
+qr:session,
+lat:pos.coords.latitude,
+lon:pos.coords.longitude
+
+})
+
+})
+
+.then(res=>res.json())
+
+.then(data=>{
+
+if(data.status === "success"){
+
+document.getElementById("status").innerHTML =
+"✅ Attendance Marked<br>" +
+"Time: " + data.time + "<br>" +
+"Distance: " + data.distance + " meters"
+
+}
+
+else{
+
+document.getElementById("status").innerHTML =
+"❌ " + data.msg
+
+}
+
+})
+
+})
+
+}
+
+// start scanner
+scanner = new Html5QrcodeScanner(
+"reader",
+{
+fps:10,
+qrbox:250,
+supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+}
+);
+
+scanner.render(onScanSuccess);
+
+</script>
+
+</body>
+
+</html>
+
+
+
+

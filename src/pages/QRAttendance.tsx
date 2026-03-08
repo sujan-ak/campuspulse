@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { GlowCard } from "@/components/GlowCard";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const COLORS = [
   "linear-gradient(135deg,#f59e0b,#ef4444)",
@@ -19,15 +22,17 @@ interface Student {
 }
 
 export default function QRAttendance() {
+  const { user } = useAuth();
   const [sessionActive, setSessionActive] = useState(false);
   const [currentCode, setCurrentCode] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [qrVersion, setQrVersion] = useState(0);
   const [countdown, setCountdown] = useState(30);
   const [qrTimestamp, setQrTimestamp] = useState(Date.now());
   const [scannedStudents, setScannedStudents] = useState<Student[]>([]);
   const [scannedSet, setScannedSet] = useState(new Set<string>());
   const [refreshCount, setRefreshCount] = useState(0);
-  
+
   const [subject, setSubject] = useState("Data Structures");
   const [room, setRoom] = useState("Room 204");
   const [faculty, setFaculty] = useState("Prof. Williams");
@@ -41,7 +46,7 @@ export default function QRAttendance() {
     return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
   };
 
-  const issueQR = () => {
+  const issueQR = async () => {
     const newVersion = qrVersion + 1;
     setQrVersion(newVersion);
     setRefreshCount(prev => prev + 1);
@@ -49,16 +54,47 @@ export default function QRAttendance() {
     setCurrentCode(code);
     setQrTimestamp(Date.now());
     setCountdown(30);
+
+    // Optionally update the session code in Supabase if we want full sync
+    if (sessionId) {
+      await supabase
+        .from('sessions')
+        .update({ code: code })
+        .eq('id', sessionId);
+    }
   };
 
-  const startSession = () => {
-    setSessionActive(true);
+  const startSession = async () => {
+    if (!user) return;
+
+    // Check if there's an active session first
+    const { data: activeSessions } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('teacher_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (activeSessions && activeSessions.length > 0) {
+      const session = activeSessions[0];
+      setSessionId(session.id);
+      setCurrentCode(session.code);
+      setSubject(session.subject);
+      setRoom(session.room);
+      setSessionActive(true);
+      setStartTime(new Date(session.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }));
+      toast.success("Resumed active session");
+    } else {
+      toast.error("No active session found. Please create one first.");
+      // For now, let's allow manual start for testing if user wants, 
+      // but the flow should be Create -> QR.
+    }
+
     setQrVersion(0);
     setScannedStudents([]);
     setScannedSet(new Set());
     setRefreshCount(0);
-    setStartTime(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }));
-    issueQR();
   };
 
   const stopSession = () => {
@@ -86,14 +122,14 @@ export default function QRAttendance() {
     const initials = name.split(" ").map(w => w[0].toUpperCase()).join("").slice(0, 2);
     const color = COLORS[scannedStudents.length % COLORS.length];
     const time = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    
+
     setScannedSet(prev => new Set(prev).add(rollUp));
     setScannedStudents(prev => [{ name: name.trim(), roll: rollUp, time, initials, color }, ...prev]);
   };
 
   useEffect(() => {
     if (!sessionActive) return;
-    
+
     timerRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -202,7 +238,7 @@ export default function QRAttendance() {
                   <div style={{ position: "absolute", top: 5, right: 5, width: 20, height: 20, borderTop: "2px solid #0ea5c8", borderRight: "2px solid #0ea5c8", borderRadius: "0 4px 0 0" }} />
                   <div style={{ position: "absolute", bottom: 5, left: 5, width: 20, height: 20, borderBottom: "2px solid #0ea5c8", borderLeft: "2px solid #0ea5c8", borderRadius: "0 0 0 4px" }} />
                   <div style={{ position: "absolute", bottom: 5, right: 5, width: 20, height: 20, borderBottom: "2px solid #0ea5c8", borderRight: "2px solid #0ea5c8", borderRadius: "0 0 4px 0" }} />
-                  <QRCodeSVG value={`CAMPUSPULSE|${subject}|${room}|${currentCode}|v${qrVersion}|${qrTimestamp}`} size={220} bgColor="#1a2436" fgColor="#0ea5c8" level="M" />
+                  <QRCodeSVG value={`CAMPUSPULSE|${sessionId}|${subject}|${room}|${currentCode}|v${qrVersion}|${qrTimestamp}`} size={220} bgColor="#1a2436" fgColor="#0ea5c8" level="M" />
                 </div>
 
                 {/* Session Code */}
