@@ -34,6 +34,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/attendance" element={<ProtectedRoute allowedRole="student"><Attendance /></ProtectedRoute>} />
               <Route path="/qr-attendance" element={<ProtectedRoute allowedRole="teacher"><QRAttendance /></ProtectedRoute>} />
+              <Route path="/qr-attendance/:sessionId" element={<ProtectedRoute allowedRole="teacher"><QRAttendance /></ProtectedRoute>} />
               <Route path="/create-session" element={<ProtectedRoute allowedRole="teacher"><CreateSession /></ProtectedRoute>} />
               <Route path="/attendance-monitor" element={<ProtectedRoute allowedRole="teacher"><AttendanceMonitor /></ProtectedRoute>} />
               <Route path="/activities" element={<ProtectedRoute allowedRole="student"><Activities /></ProtectedRoute>} />

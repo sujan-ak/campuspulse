@@ -25,7 +25,7 @@ const Analytics = () => {
     if (yl) yl.innerHTML = [0,10,20,30,45].map(v => `<div class="yl">${v}</div>`).join('');
     ch.innerHTML = data.map((d,i) => {
       const ph = Math.round((d.p/45)*H), lh = Math.round((d.l/45)*H), ah = Math.round((d.a/45)*H);
-      return `<div class="bg"><div class="bpair"><div class="bar p" style="height:${ph}px"></div><div class="bar l" style="height:${lh}px"></div><div class="bar a" style="height:${ah}px"></div></div><div class="bx ${i===2?'hl':''}">${d.d}</div></div>`;
+      return `<div class="bg"><div class="bpair chart-tooltip-trigger" style="position:relative;cursor:pointer"><div class="bar p" style="height:${ph}px"></div><div class="bar l" style="height:${lh}px"></div><div class="bar a" style="height:${ah}px"></div><div class="chart-tooltip" style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#fff;padding:8px 12px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;margin-bottom:8px;z-index:10">Present: ${d.p}<br>Late: ${d.l}<br>Absent: ${d.a}</div></div><div class="bx ${i===2?'hl':''}">${d.d}</div></div>`;
     }).join('');
   };
 
@@ -190,6 +190,7 @@ const Analytics = () => {
         .g13{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px}
         .g22{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
         .g31{display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-bottom:16px}
+        .chart-tooltip-trigger:hover .chart-tooltip{opacity:1}
       `}</style>
 
       <div className="analytics-main">

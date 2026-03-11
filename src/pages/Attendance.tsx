@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { GlowCard } from "@/components/GlowCard";
 import ODForm from "@/components/ODForm";
 import { Scanner } from "@yudiel/react-qr-scanner";
@@ -17,9 +17,120 @@ const Attendance = () => {
   const [isProcessingState, setIsProcessingState] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<{ title: string, room: string } | null>(null);
 
+  // Check for session parameter in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session');
+    const qrCode = params.get('code');
+    
+    if (sessionId) {
+      // Auto-mark attendance from URL
+      markAttendanceFromURL(sessionId, qrCode);
+    }
+  }, []);
+
+  const markAttendanceFromURL = async (sessionId: string, qrCode: string | null) => {
+    if (isProcessing.current) return;
+    
+    isProcessing.current = true;
+    setIsProcessingState(true);
+
+    try {
+      // 1. Fetch session details
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single();
+
+      if (sessionError || !session) throw new Error("Session not found or expired");
+      if (session.status !== 'active') throw new Error("This session is no longer active");
+
+      // Verify code matches current session code if provided
+      if (qrCode && session.code !== qrCode) {
+        throw new Error("QR Code has expired. Please scan the latest code.");
+      }
+
+      // 2. Geofencing check
+      let distance = null;
+      let studentLat = null;
+      let studentLon = null;
+
+      if (session.geofencing_enabled && session.latitude && session.longitude) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
+          });
+          studentLat = position.coords.latitude;
+          studentLon = position.coords.longitude;
+
+          distance = calculateDistance(
+            studentLat, studentLon,
+            session.latitude, session.longitude
+          );
+
+          if (distance > (session.radius_meters || 100)) {
+            throw new Error(`Out of range! You are ${Math.round(distance)}m away from the classroom.`);
+          }
+        } catch (err: any) {
+          console.error("Geo error:", err);
+          const msg = err.code === 1 ? "Location access denied. Please enable GPS." :
+            err.code === 3 ? "Wait, GPS is taking too long. Try moving near a window." :
+              (err.message || "Could not verify your location.");
+          throw new Error(msg);
+        }
+      }
+
+      // 3. Mark attendance
+      const { error: attError } = await supabase
+        .from('attendance')
+        .insert([{
+          user_id: user?.id,
+          session_id: sessionId,
+          status: 'present',
+          latitude: studentLat,
+          longitude: studentLon,
+          distance_from_teacher: distance,
+          session_name: session.subject,
+          session_date: new Date().toISOString().split('T')[0]
+        }]);
+
+      if (attError) {
+        if (attError.code === '23505') throw new Error("Attendance already marked for this session");
+        throw attError;
+      }
+
+      setSessionInfo({ title: session.subject, room: session.room });
+      setConfirmed(true);
+      toast.success("Attendance marked successfully!");
+      
+      // Clean URL
+      window.history.replaceState({}, '', '/attendance');
+    } catch (err: any) {
+      console.error("Attendance error:", err);
+      toast.error(err.message || "Failed to mark attendance");
+    } finally {
+      isProcessing.current = false;
+      setIsProcessingState(false);
+    }
+  };
+
   const handleScan = async (result: any) => {
     if (result?.[0]?.rawValue && !isProcessing.current) {
       const rawValue = result[0].rawValue;
+      
+      // Check if it's a URL (new format)
+      if (rawValue.startsWith('http://') || rawValue.startsWith('https://')) {
+        // Redirect to the URL
+        window.location.href = rawValue;
+        return;
+      }
+      
+      // Legacy format support
       if (!rawValue.startsWith("CAMPUSPULSE|")) {
         toast.error("Invalid QR Code for CampusPulse");
         return;

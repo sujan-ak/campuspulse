@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 interface Student {
   id: number;
@@ -56,7 +59,10 @@ const NAMES = [
 ];
 
 const AttendanceMonitor = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
+  const [sessionData, setSessionData] = useState<any>(null);
   const [qrCode, setQrCode] = useState('');
   const [qrCountdown, setQrCountdown] = useState(30);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
@@ -67,21 +73,53 @@ const AttendanceMonitor = () => {
   const perPage = 10;
 
   useEffect(() => {
-    const initStudents = NAMES.map((n, i) => ({
-      id: i + 1,
-      name: n,
-      roll: `22CS${1001 + i}`,
-      initials: n.split(' ').map(w => w[0]).join('').slice(0, 2),
-      color: AVATARS[i % AVATARS.length],
-      status: 'Absent' as const,
-      scanTime: null,
-      attendance: Math.floor(60 + Math.random() * 38),
-      selected: false,
-      flagged: false,
-    }));
-    setStudents(initStudents);
-    setQrCode(genCode());
-  }, []);
+    if (!user) return;
+    fetchActiveSession();
+  }, [user]);
+
+  const fetchActiveSession = async () => {
+    try {
+      const { data: session, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('teacher_id', user?.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !session) {
+        console.log('No active session found');
+        return;
+      }
+
+      setSessionData(session);
+      setQrCode(session.code);
+
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select('*, users(id, full_name, email)')
+        .eq('section', session.section || 'All');
+
+      if (enrollments) {
+        const studentList = enrollments.map((e: any, i: number) => ({
+          id: i + 1,
+          name: e.users?.full_name || 'Student ' + (i + 1),
+          roll: e.student_id || `STU${1001 + i}`,
+          initials: (e.users?.full_name || 'S').split(' ').map((w: string) => w[0]).join('').slice(0, 2),
+          color: AVATARS[i % AVATARS.length],
+          status: 'Absent' as const,
+          scanTime: null,
+          attendance: Math.floor(60 + Math.random() * 38),
+          selected: false,
+          flagged: false,
+        }));
+        setStudents(studentList);
+      }
+    } catch (err) {
+      console.error('Error fetching session:', err);
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -152,7 +190,7 @@ const AttendanceMonitor = () => {
     absent: students.filter(s => s.status === 'Absent').length,
     late: students.filter(s => s.status === 'Late').length,
     flagged: students.filter(s => s.flagged).length,
-    rate: Math.round(((students.filter(s => s.status === 'Present' || s.status === 'Late').length) / TOTAL) * 100)
+    rate: students.length > 0 ? Math.round(((students.filter(s => s.status === 'Present' || s.status === 'Late').length) / students.length) * 100) : 0
   };
 
   const getFiltered = () => {
@@ -289,7 +327,7 @@ const AttendanceMonitor = () => {
       <div className="am-topbar">
         <div className="am-tb-left">
           <h1>Attendance <span>Monitor</span></h1>
-          <p>Real-time tracking · Data Structures — Saturday, March 8, 2026</p>
+          <p>Real-time tracking · {sessionData?.subject || 'Session'} — {sessionData?.date ? new Date(sessionData.date).toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}) : ''}</p>
         </div>
         <div className="am-tb-right">
           <div className="am-live-badge">
@@ -310,7 +348,7 @@ const AttendanceMonitor = () => {
         <div className="am-sc am-acc">
           <div className="am-sv">{stats.present}</div>
           <div className="am-sk">Present</div>
-          <div className="am-s-trend">of {TOTAL} students</div>
+          <div className="am-s-trend">of {students.length} students</div>
         </div>
         <div className="am-sc">
           <div className="am-sv" style={{color: 'var(--red)'}}>{stats.absent}</div>
@@ -347,12 +385,12 @@ const AttendanceMonitor = () => {
         <div className="am-sb-divider"></div>
         <div className="am-sb-item">
           <div className="am-si-lbl">Subject</div>
-          <div className="am-si-val">Data Structures</div>
+          <div className="am-si-val">{sessionData?.subject || 'N/A'}</div>
         </div>
         <div className="am-sb-divider"></div>
         <div className="am-sb-item">
           <div className="am-si-lbl">Time</div>
-          <div className="am-si-val">10:00 AM – 11:00 AM</div>
+          <div className="am-si-val">{sessionData?.start_time || ''} – {sessionData?.end_time || ''}</div>
         </div>
         <div className="am-cd-pill">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -384,7 +422,7 @@ const AttendanceMonitor = () => {
                 />
               </div>
               <div className={`am-filter-chip ${currentFilter === 'all' ? 'am-sel' : ''}`} onClick={() => setCurrentFilter('all')}>
-                All ({TOTAL})
+                All ({students.length})
               </div>
               <div className={`am-filter-chip ${currentFilter === 'present' ? 'am-sel' : ''}`} onClick={() => setCurrentFilter('present')}>
                 Present ({students.filter(s => s.status === 'Present').length})
@@ -493,7 +531,7 @@ const AttendanceMonitor = () => {
                     stroke="var(--teal)" 
                     strokeWidth="10" 
                     strokeLinecap="round"
-                    strokeDasharray={`${(2*Math.PI*50)*(stats.present/TOTAL)} ${2*Math.PI*50}`}
+                    strokeDasharray={`${students.length > 0 ? (2*Math.PI*50)*(stats.present/students.length) : 0} ${2*Math.PI*50}`}
                   />
                 </svg>
                 <div className="am-donut-center">

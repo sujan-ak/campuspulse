@@ -13,12 +13,10 @@ const CreateSession = () => {
   const [attMode, setAttMode] = useState("QR Scan");
   const [tags, setTags] = useState(["Arrays", "Linked Lists"]);
   const [tagInput, setTagInput] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
-  const [launchedCode, setLaunchedCode] = useState("");
 
   const [formData, setFormData] = useState({
-    title: "", subject: "", dept: "", year: "", section: "", room: "", strength: 42,
+    title: "", subject: "", dept: "", year_semester: "", section: "", room: "", strength: 42,
     date: new Date().toISOString().split('T')[0], startTime: "", endTime: "",
     qrInterval: "30", lateThreshold: "15", notes: ""
   });
@@ -69,13 +67,19 @@ const CreateSession = () => {
       } catch (err) {
         console.error("Geolocation error:", err);
         toast.error("Could not capture your location. Geofencing may not work correctly.");
-        // Continue anyway or block? Let's allow but notify.
       }
     }
 
     const code = Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 33)]).join('');
 
     try {
+      // Deactivate previous sessions
+      await supabase
+        .from('sessions')
+        .update({ status: 'completed' })
+        .eq('teacher_id', user.id)
+        .eq('status', 'active');
+
       const { data, error } = await supabase
         .from('sessions')
         .insert({
@@ -92,16 +96,18 @@ const CreateSession = () => {
           longitude: lon,
           geofencing_enabled: toggles.geoLocation,
           radius_meters: 100,
-          section: formData.section || 'All'
+          section: formData.section || 'All',
+          department: formData.dept,
+          year_semester: formData.year_semester,
+          class_strength: formData.strength
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setLaunchedCode(code);
-      setShowSuccess(true);
       toast.success("Session launched successfully!");
+      navigate(`/qr-attendance/${data.id}`);
     } catch (error: any) {
       console.error("Error creating session:", error);
       toast.error(error.message || "Failed to launch session");
@@ -168,7 +174,7 @@ const CreateSession = () => {
               </div>
               <div>
                 <label style={{ fontSize: "11px", fontWeight: 600, color: "rgba(255,255,255,.7)", display: "block", marginBottom: "6px" }}>Year / Semester</label>
-                <select value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "9px", color: "#fff", padding: "11px 14px", fontSize: "13.5px", outline: "none" }}>
+                <select value={formData.year_semester} onChange={e => setFormData({ ...formData, year_semester: e.target.value })} style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "9px", color: "#fff", padding: "11px 14px", fontSize: "13.5px", outline: "none" }}>
                   <option value="">Select year</option>
                   <option>1st Year – Sem 1</option>
                   <option>2nd Year – Sem 3</option>
@@ -351,22 +357,6 @@ const CreateSession = () => {
           </GlowCard>
         </div>
       </div>
-
-      {/* Success Modal */}
-      {showSuccess && (
-        <div onClick={() => setShowSuccess(false)} style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,.65)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "rgba(255,255,255,.055)", border: "1px solid rgba(15,184,201,.3)", borderRadius: "20px", padding: "40px 44px", textAlign: "center", maxWidth: "420px", width: "90%", boxShadow: "0 24px 64px rgba(0,0,0,.5)" }}>
-            <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "rgba(34,197,94,.12)", border: "2px solid rgba(34,197,94,.4)", display: "grid", placeItems: "center", margin: "0 auto 18px" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-            </div>
-            <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: "20px", fontWeight: 800, marginBottom: "8px" }}>Session Launched! 🚀</h2>
-            <p style={{ fontSize: "13.5px", color: "rgba(255,255,255,.7)", lineHeight: 1.6, maxWidth: "300px", margin: "0 auto 22px" }}>Your session is live. Students can now mark attendance.</p>
-            <button onClick={() => setShowSuccess(false)} style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #0fb8c9, #1d4ed8)", color: "#fff", fontSize: "14px", fontWeight: 600, cursor: "pointer", boxShadow: "0 0 18px rgba(15,184,201,.4)" }}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
