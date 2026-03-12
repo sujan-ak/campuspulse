@@ -1,299 +1,445 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const Analytics = () => {
-  const [range, setRange] = useState('30d');
+  const [range, setRange] = useState('Semester');
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      renderWeekChart();
-      renderSubjectDonut();
-      renderLineChart();
-      renderHeatmap();
-      renderRankings();
-      renderSubjects();
-      renderInsights();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
 
-  const renderWeekChart = () => {
-    const data = [{d:'Mon',p:38,l:2,a:2},{d:'Tue',p:34,l:4,a:4},{d:'Wed',p:40,l:1,a:1},{d:'Thu',p:36,l:3,a:3},{d:'Fri',p:33,l:5,a:4},{d:'Sat',p:28,l:2,a:3},{d:'Sun',p:16,l:1,a:2}];
-    const ch = document.getElementById('weekChart');
-    if (!ch) return;
-    const H = 140;
-    const yl = document.getElementById('yLabels');
-    if (yl) yl.innerHTML = [0,10,20,30,45].map(v => `<div class="yl">${v}</div>`).join('');
-    ch.innerHTML = data.map((d,i) => {
-      const ph = Math.round((d.p/45)*H), lh = Math.round((d.l/45)*H), ah = Math.round((d.a/45)*H);
-      return `<div class="bg"><div class="bpair chart-tooltip-trigger" style="position:relative;cursor:pointer"><div class="bar p" style="height:${ph}px"></div><div class="bar l" style="height:${lh}px"></div><div class="bar a" style="height:${ah}px"></div><div class="chart-tooltip" style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#fff;padding:8px 12px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;margin-bottom:8px;z-index:10">Present: ${d.p}<br>Late: ${d.l}<br>Absent: ${d.a}</div></div><div class="bx ${i===2?'hl':''}">${d.d}</div></div>`;
-    }).join('');
-  };
 
-  const renderSubjectDonut = () => {
-    const subjects = [{name:'Data Structures',pct:91,color:'#0ea5c8'},{name:'Algorithms',pct:85,color:'#22c55e'},{name:'Database',pct:88,color:'#a855f7'},{name:'OS Lab',pct:79,color:'#f59e0b'},{name:'Math 101',pct:84,color:'#3b82f6'},{name:'Physics',pct:76,color:'#ef4444'}];
-    const svg = document.getElementById('subjectDonutSVG');
-    const legend = document.getElementById('subjectLegend');
-    if (!svg || !legend) return;
-    const R=45, cx=55, cy=55, circ=2*Math.PI*R;
-    const total = subjects.reduce((s,x)=>s+x.pct,0);
-    let offset=0;
-    svg.innerHTML=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--bg3)" stroke-width="12"/>`;
-    subjects.forEach(s=>{
-      const dash=(s.pct/total)*circ;
-      svg.innerHTML+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${s.color}" stroke-width="12" stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${-offset}" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:${cx}px ${cy}px"/>`;
-      offset+=dash;
-    });
-    legend.innerHTML = subjects.map(s => `<div class="dl-row"><div class="dl-key"><div class="ld" style="background:${s.color}"></div>${s.name.split(' ')[0]}</div><div class="dl-bar-bg"><div class="dl-bar-fill" style="width:${s.pct}%;background:${s.color}"></div></div><div class="dl-val" style="color:${s.color}">${s.pct}%</div></div>`).join('');
-  };
-
-  const renderLineChart = () => {
-    const svg = document.getElementById('lineChart');
-    if (!svg) return;
-    const data = [82,85,80,88,90,84,86,89,83,87,91,85,88,82,86,90,87,84,89,91,86,88,83,87,90,85,88,91];
-    const W = svg.parentElement?.clientWidth || 700, H = 140, pad = 16;
-    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-    const pts = data.map((v,i) => [pad+(i/(data.length-1))*(W-pad*2), H-pad-(((v-70)/(100-70))*(H-pad*2))]);
-    const ty = H-pad-(((75-70)/(100-70))*(H-pad*2));
-    svg.innerHTML = `<defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0ea5c8" stop-opacity="0.25"/><stop offset="100%" stop-color="#0ea5c8" stop-opacity="0"/></linearGradient></defs><line x1="${pad}" y1="${ty}" x2="${W-pad}" y2="${ty}" stroke="rgba(14,165,200,0.2)" stroke-width="1.5" stroke-dasharray="5,4"/><path d="M${pts[0][0]},${H-pad} ${pts.map(p=>p[0]+','+p[1]).join(' ')} ${pts[data.length-1][0]},${H-pad}Z" fill="url(#areaGrad)"/><path d="M${pts.map(p=>p[0]+','+p[1]).join(' L ')}" fill="none" stroke="#0ea5c8" stroke-width="2" stroke-linejoin="round"/>${pts.filter((_,i)=>i%3===0).map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#0ea5c8"/>`).join('')}`;
-    const xl = document.getElementById('lineXLabels');
-    if (xl) xl.innerHTML = data.filter((_,i)=>i%4===0||i===data.length-1).map((v,i,arr)=>{const idx=i===arr.length-1?data.length-1:i*4;return `<span style="font-size:10px;color:var(--muted)">Mar ${idx+1}</span>`;}).join('');
-  };
-
-  const renderHeatmap = () => {
-    const el = document.getElementById('heatmap');
-    if (!el) return;
-    const days = ['Mo','Tu','We','Th','Fr','Sa'];
-    const cols = `<div class="hm-col-labels">${Array.from({length:5},(_,i)=>`<div class="hm-col-lbl">W${i+1}</div>`).join('')}</div>`;
-    el.innerHTML = cols + days.map(d => {
-      const cells = Array.from({length:5}, () => {
-        const v = Math.random();
-        const alpha = v<0.1?0.08:v<0.3?0.22:v<0.5?0.42:v<0.7?0.62:v<0.85?0.82:1;
-        return `<div class="hm-cell" style="background:rgba(14,165,200,${alpha})"></div>`;
-      }).join('');
-      return `<div class="hm-row"><div class="hm-label">${d}</div><div class="hm-cells">${cells}</div></div>`;
-    }).join('');
-  };
-
-  const renderRankings = () => {
-    const students = [{name:'Priya Sharma',roll:'22CS1045',att:98,color:'linear-gradient(135deg,#f59e0b,#ef4444)'},{name:'Alex Johnson',roll:'22CS1012',att:95,color:'linear-gradient(135deg,#3b82f6,#8b5cf6)'},{name:'Maya Chen',roll:'22CS1078',att:93,color:'linear-gradient(135deg,#ec4899,#f97316)'},{name:'Sam Wilson',roll:'22CS1033',att:91,color:'linear-gradient(135deg,#10b981,#0ea5c8)'},{name:'Riya Kapoor',roll:'22CS1056',att:88,color:'linear-gradient(135deg,#6366f1,#0ea5c8)'},{name:'Dev Patel',roll:'22CS1021',att:85,color:'linear-gradient(135deg,#14b8a6,#3b82f6)'},{name:'Ananya Singh',roll:'22CS1067',att:82,color:'linear-gradient(135deg,#f97316,#eab308)'}];
-    const table = document.getElementById('rankTable');
-    if (!table) return;
-    const ranks=['gold','silver','bronze','','','',''];
-    table.innerHTML = `<thead><tr><th>#</th><th>Student</th><th>Attendance</th><th>Status</th></tr></thead><tbody>${students.map((s,i) => {const c=s.att>=90?'sb-ex':s.att>=85?'sb-gd':s.att>=75?'sb-av':'sb-lo';const cl=s.att>=90?'Excellent':s.att>=85?'Good':s.att>=75?'Average':'Low';const bc=s.att>=90?'var(--green)':s.att>=85?'var(--teal)':s.att>=75?'var(--amber)':'var(--red)';return `<tr><td><span class="rank-num ${ranks[i]||''}">${i+1}</span></td><td><div class="sc-cell"><div class="av" style="background:${s.color}">${s.name.split(' ').map(w=>w[0]).join('')}</div><div><div style="font-size:13px;font-weight:500">${s.name}</div><div style="font-size:11px;color:var(--muted)">${s.roll}</div></div></div></td><td><div class="pbar"><div class="pbar-bg"><div class="pbar-fill" style="width:${s.att}%;background:${bc}"></div></div><span class="pval" style="color:${bc}">${s.att}%</span></div></td><td><span class="sbadge ${c}">${cl}</span></td></tr>`;}).join('')}</tbody>`;
-  };
-
-  const renderSubjects = () => {
-    const subjects = [{name:'Data Structures',pct:91,color:'#0ea5c8',trend:'+3%'},{name:'Algorithms',pct:85,color:'#22c55e',trend:'+1%'},{name:'Database Systems',pct:88,color:'#a855f7',trend:'+5%'},{name:'OS Lab',pct:79,color:'#f59e0b',trend:'-2%'},{name:'Math 101',pct:84,color:'#3b82f6',trend:'+2%'},{name:'Physics Lab',pct:76,color:'#ef4444',trend:'-1%'}];
-    const list = document.getElementById('subjList');
-    if (!list) return;
-    list.innerHTML = subjects.map(s => `<div class="subj-row"><div class="subj-dot" style="background:${s.color}"></div><div class="subj-name">${s.name}</div><div class="subj-pbar"><div class="pbar"><div class="pbar-bg"><div class="pbar-fill" style="width:${s.pct}%;background:${s.color}"></div></div></div></div><div class="subj-pct" style="color:${s.color}">${s.pct}%</div><div class="subj-trend" style="color:${s.trend.startsWith('+')?'var(--green)':'var(--red)'};font-size:12px;font-weight:600">${s.trend}</div></div>`).join('');
-  };
-
-  const renderInsights = () => {
-    const insights = [{icon:'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>',color:'var(--teal-dim)',stroke:'var(--teal)',title:'Best Day',desc:'Wednesday has the highest avg attendance at 91%.'},{icon:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',color:'var(--red-dim)',stroke:'var(--red)',title:'At-Risk Alert',desc:'11 students are below the 75% threshold.'},{icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',color:'var(--amber-dim)',stroke:'var(--amber)',title:'Least Attended',desc:'Friday sessions average 5 late arrivals.'},{icon:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',color:'var(--green-dim)',stroke:'var(--green)',title:'Proxy Prevented',desc:'8 proxy attempts blocked this month.'}];
-    const grid = document.getElementById('insightsGrid');
-    if (!grid) return;
-    grid.innerHTML = insights.map(i => `<div class="insight-card" style="background:${i.color};border-color:${i.color.replace('0.12)','0.25)')}"><div class="ins-icon" style="background:${i.color.replace('0.12)','0.2)')}"><svg viewBox="0 0 24 24" fill="none" stroke="${i.stroke}" stroke-width="2">${i.icon}</svg></div><div class="ins-title">${i.title}</div><div class="ins-desc">${i.desc}</div></div>`).join('');
+  const SUBJECTS = [
+    {name:'Data Structures',  pct:91, attended:22, total:24, color:'#38bdf8',  status:'safe'},
+    {name:'Algorithms',        pct:85, attended:17, total:20, color:'#a78bfa',  status:'safe'},
+    {name:'Database Systems',  pct:88, attended:21, total:24, color:'#34d399',  status:'safe'},
+    {name:'OS Lab',            pct:79, attended:15, total:19, color:'#60a5fa',  status:'warn'},
+    {name:'Math 101',          pct:84, attended:16, total:19, color:'#fb923c',  status:'safe'},
+    {name:'Physics Lab',       pct:68, attended:13, total:19, color:'#f87171',  status:'risk'},
+  ];
+  
+  const WEEK = [
+    {d:'Mon', p:5, l:0, a:0},
+    {d:'Tue', p:6, l:1, a:0},
+    {d:'Wed', p:6, l:0, a:0},
+    {d:'Thu', p:5, l:1, a:1},
+    {d:'Fri', p:4, l:1, a:0},
+    {d:'Sat', p:3, l:0, a:0},
+    {d:'Sun', p:5, l:0, a:0},
+  ];
+  
+  const CALENDAR_DAYS = [
+    {day:1,status:'P'},{day:2,status:'P'},{day:3,status:'P'},{day:4,status:'L'},{day:5,status:'A'},
+    {day:6,status:'P'},{day:7,status:'P'},{day:8,status:'P'},{day:9,status:'P'},{day:10,status:'P'},
+    {day:11,status:'P',today:true},{day:12,status:'L'},{day:13,status:'P'},{day:14,status:'P'},
+    {day:15,status:'A'},{day:16,status:'P'},{day:17,status:'P'},{day:18,status:'P'},{day:19,status:'P'},
+    {day:20,status:'P'},{day:21,status:'P'},{day:22,status:'P'},{day:23,status:'L'},{day:24,status:'P'},
+    {day:25,status:'P'},{day:26,status:'P'},{day:27,status:'P'},{day:28,status:'P'},{day:29,status:'P'},
+    {day:30,status:'P'},{day:31,status:'P'}
+  ];
+  
+  const ACTIVITY_EVENTS = [
+    {type:'present', subject:'Data Structures', time:'Today · 11:00 AM'},
+    {type:'late', subject:'Algorithms', time:'Today · 12:55 PM'},
+    {type:'present', subject:'Database Systems', time:'Yesterday · 2:00 PM'},
+    {type:'present', subject:'OS Lab', time:'Mar 6 · 9:00 AM'},
+    {type:'absent', subject:'Physics Lab', time:'Mar 5 · 11:00 AM'},
+  ];
+  
+  const AI_INSIGHTS = [
+    {icon:'🏆', title:'Best Subject', value:'Data Structures', sub:'91% attendance', color:'green'},
+    {icon:'🚨', title:'At Risk', value:'Physics Lab', sub:'Needs 4 more sessions', color:'danger'},
+    {icon:'🔥', title:'Best Streak', value:'12 Days', sub:'Consecutive attended', color:'warn'},
+    {icon:'📈', title:'Class Rank', value:'#4 / 42', sub:'Top 10%', color:'purple'},
+  ];
+  
+  const GOALS = [
+    {label:'Overall ≥ 90%', current:87, target:90, note:'3% away — keep going!', noteColor:'warn'},
+    {label:'Physics Lab ≥ 75%', current:68, target:75, note:'⚠️ 4 sessions needed', noteColor:'danger'},
+    {label:'Zero Absences in March', current:0, target:0, absences:2, note:'Goal not achievable — 2 absences logged', noteColor:'danger'},
+  ];
+  
+  const handleDownload = (type: string) => {
+    alert(`Downloading ${type}...`);
+    setShowDownloadMenu(false);
   };
 
   return (
     <>
       <style>{`
-        :root{--bg:#0d1117;--bg2:#141b26;--bg3:#1a2436;--border:rgba(255,255,255,0.07);--teal:#0ea5c8;--teal-dim:rgba(14,165,200,0.13);--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--purple:#a855f7;--text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8}
-        .analytics-main{width:100%;padding:28px 36px 52px;overflow-y:auto}
-        .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-        .topbar h1{font-family:'Syne',sans-serif;font-size:22px;font-weight:700}
-        .topbar h1 span{color:var(--teal)}
-        .topbar p{font-size:13px;color:var(--muted2);margin-top:2px}
-        .range-chips{display:flex;gap:4px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:3px}
-        .rc{padding:6px 14px;border-radius:8px;font-size:12.5px;font-weight:500;color:var(--muted2);cursor:pointer;transition:all .2s;border:none;background:transparent}
-        .rc.sel{background:var(--teal);color:#fff}
-        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-        .sc{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative}
-        .sc.acc{background:linear-gradient(135deg,#0ea5c8,#1d4ed8);border-color:transparent}
-        .sc .sv{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;margin-bottom:4px}
-        .sc .sk{font-size:11px;color:var(--muted2);font-weight:500;text-transform:uppercase}
-        .sc.acc .sk,.sc.acc .sv{color:#fff}
-        .card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
-        .ch{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 0;margin-bottom:16px}
-        .ct{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
-        .cp{padding:20px 22px}
-        .bar-chart{display:flex;align-items:flex-end;gap:6px;height:160px;padding:0 4px}
-        .bg{flex:1;display:flex;flex-direction:column;align-items:center}
-        .bpair{display:flex;align-items:flex-end;gap:3px;height:140px}
-        .bar{border-radius:4px 4px 0 0;min-width:12px}
-        .bar.p{background:linear-gradient(180deg,#1fd3f5,#0ea5c8)}
-        .bar.l{background:linear-gradient(180deg,#fcd34d,#f59e0b);opacity:.9}
-        .bar.a{background:linear-gradient(180deg,#f87171,#ef4444);opacity:.8}
-        .bx{font-size:10.5px;color:var(--muted);margin-top:6px}
-        .bx.hl{color:var(--teal);font-weight:600}
-        .y-labels{display:flex;flex-direction:column-reverse;justify-content:space-between;padding-bottom:26px;width:28px;flex-shrink:0}
-        .yl{font-size:10px;color:var(--muted);text-align:right;padding-right:6px;line-height:1}
-        .chart-with-y{display:flex;gap:0}
-        .hm-col-labels{display:flex;gap:3px;padding-left:32px;margin-bottom:4px}
-        .hm-col-lbl{width:26px;font-size:10px;color:var(--muted);text-align:center}
-        .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
-        .sc-cell{display:flex;align-items:center;gap:9px}
-        .rank-num{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;width:20px}
-        .rank-num.gold{color:#f59e0b}
-        .rank-num.silver{color:#94a3b8}
-        .rank-num.bronze{color:#b45309}
-        .pbar{display:flex;align-items:center;gap:8px}
-        .pbar-bg{flex:1;height:4px;background:var(--bg3);border-radius:2px;min-width:60px}
-        .pbar-fill{height:100%;border-radius:2px}
-        .pval{font-size:12px;font-weight:600;min-width:30px;text-align:right}
-        .sbadge{display:inline-flex;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
-        .sb-ex{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,.25)}
-        .sb-gd{background:var(--teal-dim);color:var(--teal);border:1px solid rgba(14,165,200,.25)}
-        .sb-av{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.25)}
-        .sb-lo{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.25)}
-        .subj-pbar{flex:2}
-        .subj-trend{font-size:11px;min-width:36px;text-align:right}
-        .ins-icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;margin-bottom:10px}
-        .ins-icon svg{width:14px;height:14px}
-        .legend{display:flex;gap:14px}
-        .li{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted2)}
-        .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;border:none;cursor:pointer;font-size:13.5px;font-weight:500;transition:all .2s}
-        .btn svg{width:15px;height:15px}
-        .btn-ghost{background:var(--bg2);border:1px solid var(--border);color:var(--muted2)}
-        .btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
-        .btn-primary{background:var(--teal);color:#fff;font-weight:600}
-        .btn-primary:hover{filter:brightness(1.1)}
-        .tip-card{background:linear-gradient(135deg,var(--purple-dim),var(--teal-dim));border:1px solid rgba(168,85,247,.2);border-radius:14px;padding:15px 18px;margin-top:16px}
-        .tip-lbl{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--purple);margin-bottom:6px}
-        .tip-txt{font-size:12.5px;color:var(--muted2);line-height:1.7}
-        .donut-row{display:flex;align-items:center;gap:24px}
-        .donut-wrap{position:relative;width:110px;height:110px}
-        .dl-row{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;margin-bottom:8px}
-        .dl-key{display:flex;align-items:center;gap:7px;color:var(--muted2)}
-        .ld{width:8px;height:8px;border-radius:50%}
-        .dl-bar-bg{height:3px;flex:1;background:var(--bg3);border-radius:2px;margin:0 8px}
-        .dl-bar-fill{height:100%;border-radius:2px}
-        .dl-val{font-weight:600;min-width:28px;text-align:right}
-        .heatmap{display:flex;flex-direction:column;gap:4px}
-        .hm-row{display:flex;align-items:center;gap:4px}
-        .hm-label{font-size:11px;color:var(--muted);width:28px;text-align:right}
-        .hm-cells{display:flex;gap:3px}
-        .hm-cell{width:26px;height:26px;border-radius:5px}
-        .rank-table{width:100%;border-collapse:collapse}
-        .rank-table th{font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--muted);padding:8px 14px;text-align:left;border-bottom:1px solid var(--border)}
-        .rank-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border)}
-        .subj-list{display:flex;flex-direction:column;gap:10px}
-        .subj-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border-radius:9px}
-        .subj-dot{width:10px;height:10px;border-radius:50%}
-        .subj-name{font-size:13px;font-weight:500;flex:1}
-        .subj-pct{font-size:13px;font-weight:600}
-        .insights-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-        .insight-card{border-radius:10px;padding:14px 16px;border:1px solid var(--border)}
-        .ins-title{font-size:13px;font-weight:600;margin-bottom:4px}
-        .ins-desc{font-size:12px;color:var(--muted2)}
-        .g13{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px}
-        .g22{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-        .g31{display:grid;grid-template-columns:1fr 1.4fr;gap:16px;margin-bottom:16px}
-        .chart-tooltip-trigger:hover .chart-tooltip{opacity:1}
+        :root{
+          --bg:#0b0f1a;--surface:#111827;--surface2:#1a2235;--surface3:#1f2d42;
+          --border:rgba(255,255,255,0.07);--text:#e8edf5;--muted:#6b7a99;
+          --accent:#38bdf8;--accent2:#34d399;--warn:#f59e0b;--danger:#f87171;
+          --purple:#a78bfa;--safe:#34d399;--present:#34d399;--late:#f59e0b;--absent:#f87171;
+        }
+        body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;}
+        .page-header{margin-bottom:20px;}
+        .page-header h1{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;}
+        .page-header h1 span{color:var(--accent);}
+        .page-header p{color:var(--muted);font-size:13px;margin-top:4px;}
+        .topbar-controls{display:flex;gap:10px;align-items:center;margin-bottom:20px;justify-content:flex-end;}
+        .badge-btn{padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12.5px;cursor:pointer;transition:.2s;font-family:'DM Sans',sans-serif;}
+        .badge-btn:hover{color:var(--text);border-color:var(--accent);}
+        .badge-btn.active{background:rgba(56,189,248,.15);color:var(--accent);border-color:var(--accent);font-weight:600;}
+        .user-chip{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);}
+        .avatar{width:28px;height:28px;background:linear-gradient(135deg,#38bdf8,#818cf8);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+        .download-btn{padding:8px 16px;background:linear-gradient(135deg,#38bdf8,#818cf8);border:none;border-radius:8px;color:#fff;font-weight:600;font-size:12.5px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;transition:.2s;position:relative;}
+        .download-btn:hover{opacity:.85;transform:translateY(-1px);}
+        .dl-menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;z-index:20;min-width:140px;}
+        .dl-item{padding:10px 14px;cursor:pointer;font-size:13px;}
+        .dl-item:hover{background:var(--surface3);}
+        .alert{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-left:4px solid var(--danger);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;}
+        .alert-title{font-weight:700;color:var(--danger);font-size:13.5px;margin-bottom:4px;}
+        .alert-body{color:#fca5a5;font-size:13px;line-height:1.5;}
+        .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+        .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;transition:.2s;}
+        .stat-card:hover{border-color:rgba(56,189,248,.3);transform:translateY(-2px);}
+        .stat-card .glow{position:absolute;top:-30px;right:-30px;width:80px;height:80px;border-radius:50%;opacity:.12;filter:blur(20px);}
+        .stat-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+        .stat-value{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;line-height:1;}
+        .stat-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+        .stat-card.blue .stat-value{color:var(--accent);}.stat-card.blue .glow{background:var(--accent);}
+        .stat-card.green .stat-value{color:var(--safe);}.stat-card.green .glow{background:var(--safe);}
+        .stat-card.orange .stat-value{color:var(--warn);}.stat-card.orange .glow{background:var(--warn);}
+        .stat-card.purple .stat-value{color:var(--purple);}.stat-card.purple .glow{background:var(--purple);}
+        .charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px;}
+        .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+        .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+        .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+        .legend{display:flex;gap:14px;}
+        .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);}
+        .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+        .select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:7px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+        .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+        .triple-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+        .status-pill{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap;}
+        .status-safe{background:rgba(52,211,153,.15);color:var(--safe);}
+        .status-warn{background:rgba(245,158,11,.15);color:var(--warn);}
+        .status-risk{background:rgba(248,113,113,.15);color:var(--danger);}
+        .insight-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;transition:.2s;}
+        .insight-card:hover{border-color:rgba(56,189,248,.3);}
+        .insight-card.danger-card{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.2);}
+        .insight-card.green-card{background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.2);}
+        .insight-card.warn-card{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2);}
+        .insight-card.purple-card{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.2);}
+        .personal-insight{background:linear-gradient(135deg,rgba(56,189,248,.1),rgba(167,139,250,.1));border:1px solid rgba(56,189,248,.25);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:14px;}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+        .fade-up{animation:fadeUp .4s ease both;}
+        .delay-1{animation-delay:.05s;}.delay-2{animation-delay:.1s;}.delay-3{animation-delay:.15s;}.delay-4{animation-delay:.2s;}.delay-5{animation-delay:.25s;}
       `}</style>
 
-      <div className="analytics-main">
-        <div className="topbar">
+      <div>
+        {/* Page Header */}
+        <div className="page-header fade-up">
+          <h1>My <span>Analytics</span></h1>
+          <p>Academic Year 2025–26 · Computer Science · 3rd Year</p>
+        </div>
+
+        {/* Topbar Controls */}
+        <div className="topbar-controls fade-up delay-1">
+          <button className={`badge-btn ${range === '7D' ? 'active' : ''}`} onClick={() => setRange('7D')}>7D</button>
+          <button className={`badge-btn ${range === '30D' ? 'active' : ''}`} onClick={() => setRange('30D')}>30D</button>
+          <button className={`badge-btn ${range === 'Semester' ? 'active' : ''}`} onClick={() => setRange('Semester')}>Semester</button>
+          <div className="user-chip">
+            <div className="avatar">PS</div>
+            <div>
+              <div style={{fontSize:'12.5px',fontWeight:600}}>Priya Sharma</div>
+              <div style={{fontSize:'10.5px',color:'var(--muted)'}}>22CS1045</div>
+            </div>
+          </div>
+          <div style={{position:'relative'}}>
+            <button className="download-btn" onClick={() => setShowDownloadMenu(!showDownloadMenu)}>
+              ⬇ Download Report ▾
+            </button>
+            {showDownloadMenu && (
+              <div className="dl-menu">
+                <div className="dl-item" onClick={() => handleDownload('PDF')}>📄 PDF</div>
+                <div className="dl-item" onClick={() => handleDownload('CSV')}>📊 CSV</div>
+                <div className="dl-item" onClick={() => handleDownload('Excel')}>📋 Excel</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Alert */}
+        <div className="alert fade-up delay-1">
+          <div style={{fontSize:'18px'}}>⚠️</div>
           <div>
-            <h1>Attendance <span>Analytics</span></h1>
-            <p>Computer Science · 3rd Year · Section A — Academic Year 2025–26</p>
-          </div>
-          <div className="range-chips">
-            <button className="rc" onClick={() => setRange('7d')}>7D</button>
-            <button className={`rc ${range === '30d' ? 'sel' : ''}`} onClick={() => setRange('30d')}>30D</button>
-            <button className="rc" onClick={() => setRange('90d')}>3M</button>
-            <button className="rc" onClick={() => setRange('sem')}>Semester</button>
+            <div className="alert-title">Attendance Warning — Physics Lab</div>
+            <div className="alert-body">Your attendance in Physics Lab is at <strong>68%</strong> — below the required 75% threshold. You need to attend the next <strong>4 consecutive sessions</strong> to become eligible for the exam.</div>
           </div>
         </div>
 
-        <div className="stats">
-          <div className="sc acc">
-            <div className="sv">87%</div>
-            <div className="sk">Avg Attendance</div>
+
+        {/* Stat Cards */}
+        <div className="stat-grid fade-up delay-2">
+          <div className="stat-card blue">
+            <div className="glow"></div>
+            <div className="stat-label">Overall Attendance</div>
+            <div className="stat-value">87%</div>
+            <div className="stat-sub"><span style={{color:'var(--safe)'}}>↑ +2.4%</span> this month</div>
           </div>
-          <div className="sc">
-            <div className="sv" style={{color:'var(--green)'}}>186</div>
-            <div className="sk">Total Students</div>
+          <div className="stat-card green">
+            <div className="glow"></div>
+            <div className="stat-label">Sessions Attended</div>
+            <div className="stat-value">82</div>
+            <div className="stat-sub">out of 94 total</div>
           </div>
-          <div className="sc">
-            <div className="sv" style={{color:'var(--amber)'}}>11</div>
-            <div className="sk">At-Risk Students</div>
+          <div className="stat-card orange">
+            <div className="glow"></div>
+            <div className="stat-label">Current Streak</div>
+            <div className="stat-value">12</div>
+            <div className="stat-sub">consecutive days 🔥</div>
           </div>
-          <div className="sc">
-            <div className="sv" style={{color:'var(--teal)'}}>48</div>
-            <div className="sk">Sessions This Month</div>
+          <div className="stat-card purple">
+            <div className="glow"></div>
+            <div className="stat-label">Class Rank</div>
+            <div className="stat-value">#4</div>
+            <div className="stat-sub" style={{color:'var(--safe)'}}>out of 42 students</div>
           </div>
         </div>
 
-        <div className="g13">
+        {/* Charts Row */}
+        <div className="charts-row fade-up delay-3">
+          {/* Weekly Bar Chart */}
           <div className="card">
-            <div className="ch"><div className="ct">Weekly Attendance Trend</div></div>
-            <div className="cp" style={{paddingTop:'4px'}}>
-              <div className="chart-with-y">
-                <div className="y-labels" id="yLabels"></div>
-                <div style={{flex:1}}><div className="bar-chart" id="weekChart"></div></div>
+            <div className="card-header">
+              <div className="card-title">Weekly Attendance</div>
+              <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                <div className="legend">
+                  <div className="legend-item"><div className="dot" style={{background:'var(--present)'}}></div>Present</div>
+                  <div className="legend-item"><div className="dot" style={{background:'var(--late)'}}></div>Late</div>
+                  <div className="legend-item"><div className="dot" style={{background:'var(--absent)'}}></div>Absent</div>
+                </div>
+                <select className="select"><option>This Week</option><option>Last Week</option></select>
+              </div>
+            </div>
+            <div style={{display:'flex',alignItems:'flex-end',gap:'8px',height:'130px'}}>
+              {WEEK.map((day, idx) => {
+                const isToday = day.d === 'Wed';
+                return (
+                  <div key={idx} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',height:'100%',justifyContent:'flex-end',gap:'2px'}}>
+                    {day.a > 0 && <div style={{width:'65%',height:`${day.a*15}%`,background:'var(--absent)',borderRadius:'4px 4px 0 0'}} title={`${day.d}: Absent`}></div>}
+                    {day.l > 0 && <div style={{width:'65%',height:`${day.l*15}%`,background:'var(--late)',borderRadius:'4px 4px 0 0'}} title={`${day.d}: Late`}></div>}
+                    {day.p > 0 && <div style={{width:'65%',height:`${day.p*10}%`,background:'var(--present)',borderRadius:'4px 4px 0 0',outline:isToday?'2px solid var(--accent)':'none',outlineOffset:'2px'}} title={`${day.d}: Present`}></div>}
+                    <div style={{fontSize:'10.5px',color:isToday?'var(--accent)':'var(--muted)',marginTop:'5px',fontWeight:isToday?700:400}}>{day.d}</div>
+                  </div>
+                );
+              })}
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',paddingLeft:'8px',borderLeft:'1px solid var(--border)'}}>
+                <div style={{fontFamily:'Syne',fontSize:'26px',fontWeight:800,color:'var(--accent)'}}>87%</div>
+                <div style={{fontSize:'10px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.06em'}}>Overall</div>
               </div>
             </div>
           </div>
+
+          {/* Subject Donut */}
           <div className="card">
-            <div className="ch"><div className="ct">By Subject</div></div>
-            <div className="cp" style={{paddingTop:'4px'}}>
-              <div className="donut-row">
-                <div className="donut-wrap">
-                  <svg width="110" height="110" id="subjectDonutSVG"></svg>
-                  <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-                    <div style={{fontFamily:'Syne',fontSize:'20px',fontWeight:800,color:'var(--teal)',lineHeight:1}}>87%</div>
-                    <div style={{fontSize:'9px',color:'var(--muted2)',textTransform:'uppercase',letterSpacing:'.05em',marginTop:'2px'}}>overall</div>
+            <div className="card-header"><div className="card-title">By Subject</div></div>
+            <div style={{display:'flex',gap:'20px',alignItems:'center'}}>
+              <div style={{position:'relative',width:'90px',height:'90px',flexShrink:0}}>
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                  <circle cx="45" cy="45" r="34" fill="none" stroke="var(--surface3)" strokeWidth="10"/>
+                  <circle cx="45" cy="45" r="34" fill="none" stroke="#38bdf8" strokeWidth="10" strokeDasharray="213 0" strokeLinecap="round" transform="rotate(-90 45 45)" opacity=".9"/>
+                </svg>
+                <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'}}>
+                  <div style={{fontFamily:'Syne',fontSize:'16px',fontWeight:800,color:'var(--text)'}}>82</div>
+                  <div style={{fontSize:'9px',color:'var(--muted)',lineHeight:1.2}}>sessions</div>
+                </div>
+              </div>
+              <div style={{flex:1,display:'flex',flexDirection:'column',gap:'8px'}}>
+                {SUBJECTS.map((subj, idx) => (
+                  <div key={idx} style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                    <div style={{width:'8px',height:'8px',borderRadius:'50%',background:subj.color}}></div>
+                    <div style={{flex:1,fontSize:'12.5px',color:'var(--muted)'}}>{subj.name}</div>
+                    <div style={{flex:2,height:'5px',background:'var(--surface3)',borderRadius:'99px',overflow:'hidden'}}>
+                      <div style={{height:'100%',borderRadius:'99px',width:`${subj.pct}%`,background:subj.color}}></div>
+                    </div>
+                    <div style={{fontSize:'12.5px',fontWeight:600,width:'32px',textAlign:'right',color:subj.color}}>{subj.pct}%</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Monthly Trend */}
+        <div className="card fade-up delay-3" style={{marginBottom:'20px'}}>
+          <div className="card-header">
+            <div className="card-title">Monthly Attendance Trend</div>
+            <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+              <div className="legend">
+                <div className="legend-item"><div className="dot" style={{background:'var(--accent)'}}></div>My Attendance</div>
+                <div className="legend-item"><div style={{width:'16px',height:'2px',background:'var(--muted)',borderRadius:'1px'}}></div>Class Avg</div>
+                <div className="legend-item"><div style={{width:'16px',height:'2px',background:'var(--warn)',borderRadius:'1px',borderTop:'1px dashed var(--warn)'}}></div>Target 75%</div>
+              </div>
+              <select className="select" style={{minWidth:'100px'}}><option>March 2026</option><option>February 2026</option></select>
+            </div>
+          </div>
+          <svg width="100%" height="110" viewBox="0 0 900 110" preserveAspectRatio="none">
+            <line x1="0" y1="60" x2="900" y2="60" stroke="var(--warn)" strokeWidth="1.5" strokeDasharray="6 4" opacity=".5"/>
+            <polyline points="0,72 150,68 300,74 450,70 600,69 750,71 900,68" fill="none" stroke="var(--muted)" strokeWidth="2" opacity=".5"/>
+            <path d="M0,65 C60,58 120,50 180,52 S300,40 360,38 S480,30 540,35 S660,28 720,32 S840,25 900,28 L900,110 L0,110 Z" fill="url(#trendGrad)" opacity=".3"/>
+            <path d="M0,65 C60,58 120,50 180,52 S300,40 360,38 S480,30 540,35 S660,28 720,32 S840,25 900,28" fill="none" stroke="var(--accent)" strokeWidth="2.5"/>
+            <defs>
+              <linearGradient id="trendGrad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity=".6"/>
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'var(--muted)',paddingTop:'4px'}}>
+            <span>Mar 1</span><span>Mar 8</span><span>Mar 15</span><span>Mar 22</span><span>Mar 29</span>
+          </div>
+        </div>
+
+        {/* Calendar + Subject Breakdown */}
+        <div className="bottom-grid fade-up delay-4">
+          {/* Calendar */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">March 2026 — Attendance Calendar</div>
+              <div className="legend">
+                <div className="legend-item"><div className="dot" style={{background:'var(--present)'}}></div>Present</div>
+                <div className="legend-item"><div className="dot" style={{background:'var(--late)'}}></div>Late</div>
+                <div className="legend-item"><div className="dot" style={{background:'var(--absent)'}}></div>Absent</div>
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'5px'}}>
+              {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => <div key={d} style={{textAlign:'center',fontSize:'10px',color:'var(--muted)',paddingBottom:'4px',letterSpacing:'.06em',textTransform:'uppercase'}}>{d}</div>)}
+              {CALENDAR_DAYS.map((item) => {
+                let bg = 'transparent';
+                if (item.status === 'P') bg = 'rgba(52,211,153,.25)';
+                else if (item.status === 'L') bg = 'rgba(245,158,11,.25)';
+                else if (item.status === 'A') bg = 'rgba(248,113,113,.25)';
+                const borderColor = item.status === 'P' ? 'rgba(52,211,153,.4)' : item.status === 'L' ? 'rgba(245,158,11,.4)' : item.status === 'A' ? 'rgba(248,113,113,.4)' : 'transparent';
+                return (
+                  <div key={item.day} style={{aspectRatio:'1',borderRadius:'6px',cursor:'pointer',transition:'.15s',position:'relative',background:bg,border:`2px solid ${item.today ? 'var(--accent)' : borderColor}`,boxShadow:item.today ? '0 0 0 2px rgba(56,189,248,.3)' : 'none'}} title={`Mar ${item.day}`}></div>
+                );
+              })}
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'14px'}}>
+              <div style={{fontSize:'12px',fontWeight:600,color:'var(--warn)'}}>12-Day Streak 🔥</div>
+              <div style={{display:'flex',gap:'3px',flexWrap:'wrap'}}>
+                {Array.from({length:15}, (_, i) => (
+                  <div key={i} style={{width:'9px',height:'9px',borderRadius:'50%',background:i<12?'var(--safe)':'var(--surface3)'}}></div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Subject Breakdown */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Subject Breakdown</div>
+              <div style={{fontSize:'11.5px',color:'var(--muted)'}}>6 subjects</div>
+            </div>
+            <table style={{width:'100%',borderCollapse:'collapse'}}>
+              <thead>
+                <tr>
+                  <th style={{fontSize:'10.5px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.08em',padding:'0 0 10px',textAlign:'left'}}>Subject</th>
+                  <th style={{fontSize:'10.5px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.08em',padding:'0 0 10px',textAlign:'right'}}>Attended</th>
+                  <th style={{fontSize:'10.5px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.08em',padding:'0 0 10px 12px',textAlign:'left'}}>Attendance %</th>
+                  <th style={{fontSize:'10.5px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.08em',padding:'0 0 10px',textAlign:'right'}}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SUBJECTS.map((subj, idx) => (
+                  <tr key={idx}>
+                    <td style={{padding:'9px 0',borderTop:'1px solid var(--border)',verticalAlign:'middle'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:'7px',fontSize:'13px'}}>
+                        <div style={{width:'8px',height:'8px',borderRadius:'50%',background:subj.color}}></div>
+                        {subj.name}
+                      </div>
+                    </td>
+                    <td style={{padding:'9px 0',borderTop:'1px solid var(--border)',textAlign:'right',fontSize:'12.5px',color:'var(--muted)'}}>{subj.attended}/{subj.total}</td>
+                    <td style={{padding:'9px 0 9px 12px',borderTop:'1px solid var(--border)'}}>
+                      <div style={{height:'5px',background:'var(--surface3)',borderRadius:'99px',overflow:'hidden',width:'80px'}}>
+                        <div style={{height:'100%',borderRadius:'99px',width:`${subj.pct}%`,background:subj.color}}></div>
+                      </div>
+                    </td>
+                    <td style={{padding:'9px 0',borderTop:'1px solid var(--border)',textAlign:'right'}}>
+                      <span className={`status-pill status-${subj.status}`}>{subj.pct}% · {subj.status === 'safe' ? 'Safe' : subj.status === 'warn' ? 'Warning' : 'At Risk'}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Goals + Activity + AI Insights */}
+        <div className="triple-grid fade-up delay-5">
+          {/* Goals */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Attendance Goals</div>
+              <div style={{fontSize:'11px',background:'rgba(56,189,248,.15)',color:'var(--accent)',padding:'3px 9px',borderRadius:'99px',fontWeight:600}}>3 active</div>
+            </div>
+            {GOALS.map((goal, idx) => {
+              const pct = goal.absences !== undefined ? 0 : Math.min(100, Math.round((goal.current / goal.target) * 100));
+              const barColor = goal.noteColor === 'danger' ? 'var(--danger)' : goal.noteColor === 'warn' ? 'var(--warn)' : 'var(--safe)';
+              return (
+                <div key={idx} style={{marginBottom:'14px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'12.5px',marginBottom:'6px'}}>
+                    <span>{goal.label}</span>
+                    <span style={{color:'var(--muted)'}}>{goal.absences !== undefined ? `${goal.absences} absences so far` : `${goal.current}% / ${goal.target}%`}</span>
+                  </div>
+                  <div style={{height:'6px',background:'var(--surface3)',borderRadius:'99px',overflow:'hidden'}}>
+                    <div style={{height:'100%',borderRadius:'99px',width:`${goal.absences !== undefined ? 100 : pct}%`,background:barColor,transition:'width .6s ease'}}></div>
+                  </div>
+                  <div style={{fontSize:'11px',color:`var(--${goal.noteColor})`,marginTop:'4px',textAlign:'right'}}>{goal.note}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Recent Activity */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Recent Activity</div>
+              <div style={{fontSize:'11.5px',color:'var(--accent)',cursor:'pointer'}}>Last 7 events</div>
+            </div>
+            {ACTIVITY_EVENTS.map((event, idx) => {
+              const dotColor = event.type === 'present' ? 'var(--present)' : event.type === 'late' ? 'var(--late)' : 'var(--absent)';
+              const statusColor = event.type === 'present' ? 'var(--present)' : event.type === 'late' ? 'var(--late)' : 'var(--danger)';
+              const statusLabel = event.type === 'present' ? 'Present' : event.type === 'late' ? 'Late' : 'Absent';
+              return (
+                <div key={idx} style={{display:'flex',alignItems:'flex-start',gap:'10px',padding:'9px 0',borderBottom:idx < ACTIVITY_EVENTS.length - 1 ? '1px solid var(--border)' : 'none'}}>
+                  <div style={{width:'8px',height:'8px',borderRadius:'50%',background:dotColor,marginTop:'4px',flexShrink:0}}></div>
+                  <div>
+                    <div style={{fontSize:'13px',fontWeight:500}}>{event.subject} <span style={{color:statusColor,fontSize:'11.5px'}}>{statusLabel}</span></div>
+                    <div style={{fontSize:'11px',color:'var(--muted)',marginTop:'1px'}}>{event.time}</div>
                   </div>
                 </div>
-                <div style={{flex:1}} id="subjectLegend"></div>
-              </div>
+              );
+            })}
+          </div>
+
+          {/* AI Insights */}
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">AI Insights</div>
+              <div style={{fontSize:'11px',background:'linear-gradient(135deg,#38bdf8,#a78bfa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',fontWeight:700,letterSpacing:'.06em'}}>✦ SMART</div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+              {AI_INSIGHTS.map((insight, idx) => (
+                <div key={idx} className={`insight-card ${insight.color}-card`}>
+                  <div style={{fontSize:'18px',marginBottom:'6px'}}>{insight.icon}</div>
+                  <div style={{fontSize:'11px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:'3px'}}>{insight.title}</div>
+                  <div style={{fontFamily:'Syne',fontSize:'14px',fontWeight:700,color:insight.color === 'green' ? 'var(--safe)' : insight.color === 'danger' ? 'var(--danger)' : insight.color === 'warn' ? 'var(--warn)' : 'var(--purple)'}}>{insight.value}</div>
+                  <div style={{fontSize:'11px',color:'var(--muted)',marginTop:'2px'}}>{insight.sub}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="card">
-          <div className="ch">
-            <div className="ct">Monthly Attendance Overview</div>
-            <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-              <div className="legend">
-                <div className="li"><div className="ld" style={{background:'var(--teal)'}}></div>Attendance %</div>
-                <div className="li"><div className="ld" style={{background:'rgba(14,165,200,.2)',width:'18px',height:'3px',borderRadius:'2px'}}></div>Target 75%</div>
-              </div>
-            </div>
+        {/* Personal Insight */}
+        <div className="personal-insight fade-up delay-5">
+          <div style={{fontSize:'24px'}}>💡</div>
+          <div>
+            <div style={{fontSize:'11px',textTransform:'uppercase',letterSpacing:'.1em',color:'var(--accent)',fontWeight:700,marginBottom:'5px'}}>✦ Personal Insight</div>
+            <div style={{fontSize:'13.5px',color:'var(--text)',lineHeight:1.6}}>You're performing above class average in 5 of 6 subjects. Keep attending Physics Lab consistently — just 4 more sessions will clear the 75% threshold and secure your exam eligibility.</div>
           </div>
-          <div className="cp" style={{paddingTop:'4px'}}>
-            <svg id="lineChart" width="100%" height="140"></svg>
-            <div id="lineXLabels" style={{display:'flex',justifyContent:'space-between',padding:'0 4px',marginTop:'4px'}}></div>
-          </div>
-        </div>
-
-        <div className="g22">
-          <div className="card">
-            <div className="ch"><div className="ct">Attendance Heatmap</div></div>
-            <div className="cp" style={{paddingTop:'4px'}} id="heatmap"></div>
-          </div>
-          <div className="card">
-            <div className="ch"><div className="ct">Student Rankings</div></div>
-            <div style={{overflow:'hidden'}}><table className="rank-table" id="rankTable"></table></div>
-          </div>
-        </div>
-
-        <div className="g31">
-          <div className="card">
-            <div className="ch"><div className="ct">Subject-wise Performance</div></div>
-            <div className="cp" style={{paddingTop:'0'}} id="subjList"></div>
-          </div>
-          <div className="card">
-            <div className="ch"><div className="ct">AI Insights</div></div>
-            <div className="cp" style={{paddingTop:'0'}}><div className="insights-grid" id="insightsGrid"></div></div>
-          </div>
-        </div>
-
-        <div className="tip-card">
-          <div className="tip-lbl">✦ Analytics Summary</div>
-          <div className="tip-txt">Overall attendance is <strong style={{color:'var(--teal)'}}>87%</strong> this month — above the 75% threshold. Wednesday consistently shows the highest attendance. 11 students are at risk; consider sending automated reminders before next week's sessions.</div>
         </div>
       </div>
     </>
